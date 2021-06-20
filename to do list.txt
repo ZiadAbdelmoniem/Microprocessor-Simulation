@@ -1,0 +1,10 @@
+implementation of cycles
+calculate when cycles wil end or program
+implement pipelining
+implement branching
+track what is going to be printed each cycle
+
+
+clk 1 fetch inst1 sooooo tobedecoded=inst1
+clk 2 decode inst1 sooooo tobeexec=inst1, fetch inst2 soooo tobedecoded=inst2
+clk 3 exec inst1 sooo ended, decode inst2 soooo tobexec=inst2, fetch inst3 sooo tobedecoded=inst3
