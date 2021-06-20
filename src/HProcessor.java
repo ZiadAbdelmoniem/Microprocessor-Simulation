@@ -270,8 +270,17 @@ public class HProcessor {
                 break;
             case "0011": DataMemory[rs]=(byte)rt;
                 break;
-//            case "0100": mustafa beqz
-//                break;
+           case "0100": int xsx=DataMemory[rs];
+           int xsy=DataMemory[rt];
+                if(xsx==0){
+                PC=PC-1+xsy;
+                toExecute=false;
+                toDecode=false;
+                }
+                else{
+                    PC++;
+                }
+                break;
             case "0101":int x5=DataMemory[rs];
                 int z5 = rs & rt;
                 //updating the N flag
@@ -308,8 +317,15 @@ public class HProcessor {
                 }
                 DataMemory[rs]=(byte)z6;
                 break;
-//            case "BR":b=b+0111; instrType="r"; mustafa br
-//                break;
+           case "0111":int xe=DataMemory[rs];
+           int xee=DataMemory[rt];
+           String xeee=Integer.toBinaryString(xe);
+           String xeeee=Integer.toBinaryString(xee);
+           String conc=xeee+xeeee;
+           PC=Integer.parseInt(conc,2);
+           toDecode=false;
+           toExecute=false;
+               break;
             case "1000":String x7=Integer.toBinaryString(rs);
             while(x7.length()<6){
                 x7="0"+x7;
