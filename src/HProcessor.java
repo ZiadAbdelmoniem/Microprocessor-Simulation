@@ -6,19 +6,30 @@ import java.util.List;
 public class HProcessor {
     static String [] InstructionMemory=new String[1024]; //each block is 2 byte 1 word
     static byte [] DataMemory=new byte[2048]; //each is block is 1 byte 1 word
-    static int[] SREG=new int[8];
-    // 0th=Z, 1th=S, 2th=N, 3th=V, 4th=C, 567=0, update each cycle
-    //important variables
-    static String toBeDecoded="";
-    static String opToBeExec="";
-    static int rsToBeExec=0;
-    static int rtToBeExec=0;
-    static int noOfInstr=0;
 
+    // 0th=Z, 1th=S, 2th=N, 3th=V, 4th=C, 567=0, update each cycle
+    static int[] SREG=new int[8];
 
 
     static int PC=0;
     static int clk_cycles=0;
+
+
+
+    //important variables
+    static boolean toRead=false;
+
+    static String toBeDecoded="";
+    static boolean toDecode=false;
+
+
+    static String opToBeExec="";
+    static int rsToBeExec=0;
+    static int rtToBeExec=0;
+    static boolean toExecute=false;
+
+
+    static int noOfInstr=0;
 
 
 
@@ -259,7 +270,7 @@ public class HProcessor {
                 break;
             case "0011": DataMemory[rs]=(byte)rt;
                 break;
-//            case "0100":
+//            case "0100": mustafa beqz
 //                break;
             case "0101":int x5=DataMemory[rs];
                 int z5 = rs & rt;
@@ -297,7 +308,7 @@ public class HProcessor {
                 }
                 DataMemory[rs]=(byte)z6;
                 break;
-//            case "BR":b=b+0111; instrType="r";
+//            case "BR":b=b+0111; instrType="r"; mustafa br
 //                break;
             case "1000":String x7=Integer.toBinaryString(rs);
             while(x7.length()<6){
@@ -358,24 +369,38 @@ public class HProcessor {
 
     //trying to implement pipelining
     public static void execution(){
-        int numberNeeded=noOfInstr+2;
-        for (clk_cycles = 0; clk_cycles < noOfInstr; clk_cycles++) {
-            if(clk_cycles==0){
+        //int totalClk=noOfInstr+2;
+        for (PC=0; PC < noOfInstr; PC++) {
+            if(PC==0){
                 fetch(PC);
-                PC++;
+                clk_cycles++;
             }
-           else if(clk_cycles==1){
+           else if(PC==1) {
                 decode(toBeDecoded);
                 fetch(PC);
-                PC++;
+                clk_cycles++;
             }
             else {
                 execute(opToBeExec, rsToBeExec, rsToBeExec);
                 decode(toBeDecoded);
                 fetch(PC);
-                PC++;
+                clk_cycles++;
             }
             }
+        if(toExecute){
+            execute(opToBeExec, rsToBeExec, rsToBeExec);
+            decode(toBeDecoded);
+            clk_cycles++;
+            execute(opToBeExec, rsToBeExec, rsToBeExec);
+            clk_cycles++;
+        }
+        else{
+            decode(toBeDecoded);
+            clk_cycles++;
+            execute(opToBeExec, rsToBeExec, rsToBeExec);
+            clk_cycles++;
+
+        }
 
         }
 
@@ -402,7 +427,6 @@ public class HProcessor {
 
     public static void main(String args[]) throws IOException {
 executeIt("test1.txt");
-//fetch();
 //      System.out.println(PC);
     }
 }
