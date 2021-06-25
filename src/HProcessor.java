@@ -6,18 +6,18 @@ import java.util.List;
 public class HProcessor {
     static String [] InstructionMemory=new String[1024]; //each block is 2 byte 1 word
     static byte [] DataMemory=new byte[2048]; //each is block is 1 byte 1 word
+    static byte [] Registers=new byte[63]; //each is block is 1 byte 1 word
 
     // 0th=Z, 1th=S, 2th=N, 3th=V, 4th=C, 567=0, update each cycle
     static int[] SREG=new int[8];
 
 
-    static int PC=0;
-    static int clk_cycles=0;
+    static short PC=0;
+    static int clk_cycles=1;
 
 
 
     //important variables
-    static boolean toRead=false;
 
     static String toBeDecoded="";
     static boolean toDecode=false;
@@ -30,6 +30,7 @@ public class HProcessor {
 
 
     static int noOfInstr=0;
+
 
 
 
@@ -68,7 +69,7 @@ public class HProcessor {
     public static void executeIt2(String[] x,int u){
         String b="";
         String instrType="";
-        //x[0].toUpperCase();
+        x[0].toUpperCase();
 
         //first element + identifying instruction type
         switch(x[0]){
@@ -139,9 +140,12 @@ public class HProcessor {
     public static void fetch(int pc){
         String instruction =InstructionMemory[pc];
         toBeDecoded=instruction;
+        toDecode=true;
         //decode(instruction);
-        PC++;
+        //PC++;
+        printFetch();
     }
+
 
     public static void decode(String instruction){
         String op=instruction.substring(0,4);
@@ -153,13 +157,18 @@ public class HProcessor {
         opToBeExec=op;
         rsToBeExec=rs;
         rtToBeExec=rt;
+        toExecute=true;
         //execute(op, rs, rt);
+        printDecode();
     }
 
     public static void execute(String op, int rs, int rt){
+        String f="";
         switch (op){
-            case "0000": int x=DataMemory[rs];
-            int y=DataMemory[rt];
+            case "0000": int x=Registers[rs];
+            f="Add";
+            System.out.println(f+" R"+rs+" R"+rt);
+            int y=Registers[rt];
             byte z;
                 z= (byte) (x+y);
             //updating the C flags
@@ -197,11 +206,15 @@ public class HProcessor {
                 else{
                     SREG[0]=0;
                 }
-            DataMemory[rs]=(byte)z;
+            Registers[rs]=(byte)z;
+                System.out.println("Register R"+rs+"="+Registers[rs]);
+                System.out.print("SREG Changes: "); printSreg();
             break;
 
-            case "0001":int x1=DataMemory[rs];
-                int y1=DataMemory[rt];
+            case "0001":int x1=Registers[rs];
+                int y1=Registers[rt];
+                f="SUB";
+                System.out.println(f+" R"+rs+" R"+rt);
                 byte z1;
                 z1= (byte) (x1-y1);
                 //updating the C flags
@@ -239,10 +252,14 @@ public class HProcessor {
                 else{
                     SREG[0]=0;
                 }
-                DataMemory[rs]=z1;
+                Registers[rs]=z1;
+                System.out.println("Register R"+rs+"="+Registers[rs]);
+                System.out.print("SREG Changes: "); printSreg();
                 break;
-            case "0010":int x2=DataMemory[rs];
-                int y2=DataMemory[rt];
+            case "0010":int x2=Registers[rs];
+                int y2=Registers[rt];
+                f="MUL";
+                System.out.println(f+" R"+rs+" R"+rt);
                 byte z2;
                 z2= (byte) (x2*y2);
                 //updating the C flags
@@ -266,14 +283,24 @@ public class HProcessor {
                 else{
                     SREG[0]=0;
                 }
-                DataMemory[rs]=z2;
+                Registers[rs]=z2;
+                System.out.println("Register R"+rs+"="+Registers[rs]);
+                System.out.print("SREG Changes: ");
+                System.out.print(" Carry Flag="+ SREG[4]);
+                System.out.print(" Negative Flag="+SREG[2]);
+                System.out.print(" Zero Flag="+SREG[0]);
                 break;
-            case "0011": DataMemory[rs]=(byte)rt;
+            case "0011": Registers[rs]=(byte)rt;
+            f="MOVI";
+                System.out.println(f+" R"+rs+" R"+rt);
+                System.out.println("Register R"+rs+"="+Registers[rs]);
                 break;
-           case "0100": int xsx=DataMemory[rs];
-           int xsy=DataMemory[rt];
+            case "0100": int xsx=Registers[rs];
+           int xsy=Registers[rt];
+           f="BEQZ";
+                System.out.println(f+" R"+rs+" "+rt);
                 if(xsx==0){
-                PC=PC-1+xsy;
+                PC= (short) (PC-1+xsy);
                 toExecute=false;
                 toDecode=false;
                 }
@@ -281,8 +308,10 @@ public class HProcessor {
                     PC++;
                 }
                 break;
-            case "0101":int x5=DataMemory[rs];
-                int z5 = rs & rt;
+            case "0101":int x5=Registers[rs];
+                int z5 = x5 & rt;
+                f="ANDI";
+                System.out.println(f+" R"+rs+" "+rt);
                 //updating the N flag
                 if(z5<0){
                     SREG[2]=1;
@@ -297,10 +326,16 @@ public class HProcessor {
                 else{
                     SREG[0]=0;
                 }
-                DataMemory[rs]=(byte)z5;
+                Registers[rs]=(byte)z5;
+                System.out.println("Register R"+rs+"="+Registers[rs]);
+                System.out.print("SREG Changes: ");
+                System.out.print(" Negative Flag="+SREG[2]);
+                System.out.print(" Zero Flag="+SREG[0]);
                 break;
-            case "0110":int x6=DataMemory[rs];
+            case "0110":int x6=Registers[rs];
                 int z6 = rs | rt;
+                f="EOR";
+                System.out.println(f+" R"+rs+" R"+rt);
                 //updating the N flag
                 if(z6<0){
                     SREG[2]=1;
@@ -315,18 +350,26 @@ public class HProcessor {
                 else{
                     SREG[0]=0;
                 }
-                DataMemory[rs]=(byte)z6;
+                Registers[rs]=(byte)z6;
+                System.out.println("Register R"+rs+"="+Registers[rs]);
+                System.out.print("SREG Changes: ");
+                System.out.print(" Negative Flag="+SREG[2]);
+                System.out.print(" Zero Flag="+SREG[0]);
                 break;
-           case "0111":int xe=DataMemory[rs];
-           int xee=DataMemory[rt];
-           String xeee=Integer.toBinaryString(xe);
-           String xeeee=Integer.toBinaryString(xee);
-           String conc=xeee+xeeee;
-           PC=Integer.parseInt(conc,2);
-           toDecode=false;
-           toExecute=false;
-               break;
+            case "0111":int xe=Registers[rs];
+                int xee=Registers[rt];
+                f="BR";
+                System.out.println(f+" R"+rs+" "+rt);
+                String xeee=Integer.toBinaryString(xe);
+                String xeeee=Integer.toBinaryString(xee);
+                String conc=xeee+xeeee;
+                PC= (short) Integer.parseInt(conc,2);
+                toDecode=false;
+                toExecute=false;
+                break;
             case "1000":String x7=Integer.toBinaryString(rs);
+            f="SAL";
+                System.out.println(f+" R"+rs+" "+rt);
             while(x7.length()<6){
                 x7="0"+x7;
             }
@@ -348,9 +391,15 @@ public class HProcessor {
                 else{
                     SREG[0]=0;
                 }
-                DataMemory[rs]= (byte) Integer.parseInt(s7);
+                Registers[rs]= (byte) Integer.parseInt(s7);
+                System.out.println("Register R"+rs+"="+Registers[rs]);
+                System.out.print("SREG Changes: ");
+                System.out.print(" Negative Flag="+SREG[2]);
+                System.out.print(" Zero Flag="+SREG[0]);
                 break;
             case "1001":String x8=Integer.toBinaryString(rs);
+            f="SAR";
+                System.out.println(f+" R"+rs+" "+rt);
                 while(x8.length()<6){
                     x8="0"+x8;
                 }
@@ -372,77 +421,147 @@ public class HProcessor {
                 else{
                     SREG[0]=0;
                 }
-                DataMemory[rs]= (byte) Integer.parseInt(s8);
+                Registers[rs]= (byte) Integer.parseInt(s8);
+                System.out.println("Register R"+rs+"="+Registers[rs]);
+                System.out.print("SREG Changes: ");
+                System.out.print(" Negative Flag="+SREG[2]);
+                System.out.print(" Zero Flag="+SREG[0]);
                 break;
-            case "1010":DataMemory[rs]=DataMemory[rt];
+            case "1010":Registers[rs]=DataMemory[rt];
+                f="LDR";
+                System.out.println(f+" R"+rs+" "+rt);
+                System.out.println("Register R"+rs+"="+Registers[rs]);
                 break;
-            case "1011":DataMemory[rt]=DataMemory[rs];
+            case "1011":DataMemory[rt]=Registers[rs];
+                f="STR";
+                System.out.println(f+" R"+rs+" "+rt);
+                System.out.println("Memory at"+rt+"="+DataMemory[rt]);
                 break;
             default: break;
         }
-
+        printExec(f);
     }
 
-    //trying to implement pipelining
+    //pipelining
     public static void execution(){
         //int totalClk=noOfInstr+2;
         for (PC=0; PC < noOfInstr; PC++) {
+            printClk();
+            printPc();
             if(PC==0){
                 fetch(PC);
                 clk_cycles++;
             }
-           else if(PC==1) {
+            else if(PC==1 && toDecode==false) {
+                //decode(toBeDecoded);
+                fetch(PC);
+                clk_cycles++;
+            }
+           else if(PC==1 && toDecode==true) {
                 decode(toBeDecoded);
                 fetch(PC);
                 clk_cycles++;
             }
-            else {
-                execute(opToBeExec, rsToBeExec, rsToBeExec);
+             else if(toDecode==false && toExecute==false){
+                //execute(opToBeExec, rsToBeExec, rsToBeExec);
+                //decode(toBeDecoded);
+                fetch(PC);
+                clk_cycles++;
+            }
+            else if(toDecode==true && toExecute==false){
+                //execute(opToBeExec, rsToBeExec, rsToBeExec);
+                decode(toBeDecoded);
+                fetch(PC);
+                clk_cycles++;
+            }
+              else {
+                execute(opToBeExec, rsToBeExec, rtToBeExec);
                 decode(toBeDecoded);
                 fetch(PC);
                 clk_cycles++;
             }
             }
         if(toExecute){
-            execute(opToBeExec, rsToBeExec, rsToBeExec);
+            printClk();
+            printPc();
+            execute(opToBeExec, rsToBeExec, rtToBeExec);
             decode(toBeDecoded);
             clk_cycles++;
-            execute(opToBeExec, rsToBeExec, rsToBeExec);
-            clk_cycles++;
+            printClk();
+            execute(opToBeExec, rsToBeExec, rtToBeExec);
+//            clk_cycles++;
+  //          printClk();
         }
         else{
+            printClk();
+            printPc();
             decode(toBeDecoded);
             clk_cycles++;
-            execute(opToBeExec, rsToBeExec, rsToBeExec);
-            clk_cycles++;
+            printClk();
+            printPc();
+            execute(opToBeExec, rsToBeExec, rtToBeExec);
+            //clk_cycles++;
+            //printClk();
+          //  printPc();
 
         }
+        System.out.println("Horrraaayy! the program ended!!!!!!!!");
+        printRegisters();
+        printDataMemory();
+        printInstMemory();
 
+        printSreg();
+        //printClk();
+        //printPc();
         }
 
 
     //printing statements
-    public static void printRegisters(){
-        System.out.println(Arrays.toString(DataMemory));
-    }
-    public static void printMemory(){
-        System.out.println(Arrays.deepToString(InstructionMemory));
-    }
-    public static void printSreg(){
-        System.out.println(Arrays.toString(SREG));
-    }
-    public static void printAll(){
-        System.out.println("Clock Cycles=" + clk_cycles);
-        //pipeline
-        System.out.println("Instruction no.=" + clk_cycles);
-        System.out.println("Input Parameters=" + clk_cycles);
-        System.out.println("Clock Cycles=" + clk_cycles);
-        System.out.println("Clock Cycles=" + clk_cycles);
+    public static void printRegisters(){ System.out.println("Register= "+Arrays.toString(Registers)); }
 
+    public static void printInstMemory(){System.out.println("Instruction Memory"+Arrays.deepToString(InstructionMemory)); }
+
+    public static void printDataMemory(){ System.out.println("Data Memory"+Arrays.toString(DataMemory)); }
+
+    public static void printSreg(){
+        // 0th=Z, 1th=S, 2th=N, 3th=V, 4th=C, 567=0, update each cycle
+        System.out.print(" Carry Flag="+ SREG[4]);
+        System.out.print(" Overflow Flag="+SREG[3]);
+        System.out.print(" Negative Flag="+SREG[2]);
+        System.out.print(" Sign Flag="+SREG[1]);
+        System.out.print(" Zero Flag="+SREG[0]);
     }
+
+    public static void printPc(){ System.out.println("PC="+PC);}
+
+    public static void printClk(){ System.out.println("#############################################Clock Cycle= "+ clk_cycles+"#####################################");}
+
+    public static void printFetch(){System.out.println("Fetch input="+PC);}
+
+    public static void printDecode(){System.out.println("Decode input="+toBeDecoded);}
+
+    public static void printExec(String f){
+        if(f.equals("ADD") || f.equals("SUB") ||f.equals("MUL") ||f.equals("MOVI") ||f.equals("EOR") ||f.equals("BR"))
+        System.out.println("Parameters passed to Excute: Opcode= "+opToBeExec+",Register= "+rsToBeExec+",Register= "+rtToBeExec);
+        else{
+            System.out.println("Parameters passed to Excute: Opcode= "+opToBeExec+" ,Register= "+rsToBeExec+" ,Immediate= "+rtToBeExec);
+        }
+    }
+
+
+
+
+    public static void Exec(String s) throws IOException {
+        executeIt(s);
+        execution();
+    }
+
+
+
 
     public static void main(String args[]) throws IOException {
-executeIt("test1.txt");
+//executeIt("test1.txt");
 //      System.out.println(PC);
+        Exec("test1.txt");
     }
 }
